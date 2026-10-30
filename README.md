@@ -1,4 +1,4 @@
-# CMPE 249: 2D object detection, COCO → KITTI zero-shot
+# 2d-object-detection: CMPE 249, COCO → KITTI zero-shot
 
 Three COCO-pretrained detector families on COCO val2017 and on the KITTI val split, with no
 retraining. Every run is scored by one evaluator, pycocotools COCOeval.
