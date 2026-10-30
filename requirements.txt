@@ -1,0 +1,12 @@
+# Versions verified working in Stage 1 (macOS arm64, Python 3.11). Recorded per run via pip freeze.
+ultralytics==8.4.193
+torch==2.15.0
+torchvision==0.29.2
+pycocotools==2.0.11
+numpy==2.4.6
+opencv-python==5.0.0.93
+pillow==13.0.0
+pandas==3.1.0
+matplotlib==3.11.2
+PyYAML==6.0.3
+tqdm==4.70.1

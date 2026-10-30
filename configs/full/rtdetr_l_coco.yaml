@@ -1,0 +1,16 @@
+# rtdetr-l on coco val (full images). Paths are relative to CMPE249_DATA (default: ./data).
+run_name: rtdetr_l_coco_full
+model: rtdetr-l
+weights: rtdetr-l.pt
+dataset: coco
+split: val
+subset: full
+gt_json: coco/annotations/val2017_full.json
+images: coco/val2017
+imgsz: 640
+conf: 0.001
+iou: 0.7             # unused: RT-DETR has no NMS
+max_det: 300
+device: auto         # cuda > mps > cpu; override with --device
+half: false
+eval_classes: null   # all 80 COCO classes

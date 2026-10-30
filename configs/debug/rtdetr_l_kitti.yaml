@@ -1,0 +1,16 @@
+# rtdetr-l on kitti val (50 images). Paths are relative to CMPE249_DATA (default: ./data).
+run_name: rtdetr_l_kitti_subset50
+model: rtdetr-l
+weights: rtdetr-l.pt
+dataset: kitti
+split: val
+subset: 50
+gt_json: kitti/annotations/val_subset50.json
+images: kitti/images/val
+imgsz: 640
+conf: 0.001
+iou: 0.7             # unused: RT-DETR has no NMS
+max_det: 300
+device: auto         # cuda > mps > cpu; override with --device
+half: false
+eval_classes: [car, person, truck]
