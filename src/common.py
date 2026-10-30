@@ -81,6 +81,12 @@ def data_path(rel):
 
 
 def load_json(path):
+    """Read JSON, or gzipped JSON if the name ends in .gz (synced detections are .json.gz)."""
+    if str(path).endswith(".gz"):
+        import gzip
+
+        with gzip.open(path, "rt") as f:
+            return json.load(f)
     with open(path) as f:
         return json.load(f)
 

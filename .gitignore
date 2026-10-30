@@ -8,3 +8,4 @@ weights/
 *.pt
 *.pth
 .ipynb_checkpoints/
+colab-results/

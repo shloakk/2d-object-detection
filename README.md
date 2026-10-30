@@ -47,6 +47,17 @@ python -m src.viz --gt data/kitti/annotations/val_subset50.json --dt results/<ru
 python -m src.check_ultralytics_val --config configs/debug/yolo26s_coco.yaml --dt results/<run_id>/detections.json
 ```
 
+## Colab results (no Google Drive)
+
+On Colab, `CMPE249_RESULTS` points at a clone of the `results` branch, and
+`python -m src.sync_results` commits and pushes after each run (detections are stored as
+`detections.json.gz`; `evaluate` and `viz` read them directly). To get them on your laptop:
+
+```bash
+git fetch origin results && git worktree add colab-results results   # first time
+git -C colab-results pull                                             # afterwards
+```
+
 Each run folder holds `detections.json` (COCO format), `run_meta.json`, `metrics.csv`,
 `per_class.csv` and `env/` (pip freeze, nvidia-smi, versions, git commit, exact command).
 
