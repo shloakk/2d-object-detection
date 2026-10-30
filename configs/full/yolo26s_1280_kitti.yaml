@@ -1,0 +1,18 @@
+# yolo26s NMS-free at imgsz 1280 on kitti val. Paths are relative to CMPE249_DATA (default: ./data).
+run_name: yolo26s_1280_kitti_full
+model: yolo26s
+weights: yolo26s.pt
+dataset: kitti
+split: val
+subset: full
+gt_json: kitti/annotations/val_full.json
+images: kitti/images/val
+imgsz: 1280          # isolates resolution: ~1280x387 on KITTI vs ~1333x402 for Faster R-CNN
+conf: 0.001
+iou: 0.7             # only used by the one2many head
+max_det: 300
+device: auto         # cuda > mps > cpu; override with --device
+half: false
+yolo26_head: one2one # one2one = NMS-free (nms=False); one2many = dense head + NMS (Ultralytics default)
+rect: true           # letterbox to image aspect ratio, as Ultralytics val() does
+eval_classes: [car, person, truck]

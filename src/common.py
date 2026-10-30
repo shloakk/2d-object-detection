@@ -62,7 +62,7 @@ def load_config(path, overrides=None):
     # (the value its published COCO numbers were produced with).
     cfg.setdefault("iou", 0.5 if cfg["model"] == "fasterrcnn_v2" else 0.7)
     # YOLO26 head: "one2one" = NMS-free end-to-end head (nms=False in Ultralytics),
-    # "one2many" = dense head followed by NMS (Ultralytics' default, nms=None).
+    # "one2many" = dense head followed by NMS (nms=True; same as Ultralytics' default nms=None).
     if cfg["model"].startswith("yolo26"):
         cfg.setdefault("yolo26_head", "one2one")
         # rect=True: letterbox to the image's aspect ratio (as Ultralytics val() does) instead of a

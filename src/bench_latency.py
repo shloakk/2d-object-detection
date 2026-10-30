@@ -115,7 +115,7 @@ def main():
 
     run_id = f"{cfg['run_name']}_latency_{precision}_conf{cfg['conf']}_{datetime.now():%Y%m%d-%H%M%S}"
     run_dir = RESULTS_DIR / run_id
-    run_dir.mkdir(parents=True, exist_ok=True)
+    run_dir.mkdir(parents=True, exist_ok=False)  # never overwrite another run
     capture_env(run_dir, device)
 
     images = load_json(data_path(cfg["gt_json"]))["images"][: args.n_images]

@@ -1,0 +1,18 @@
+# yolo26s one-to-many head + NMS on coco val. Paths are relative to CMPE249_DATA (default: ./data).
+run_name: yolo26s_o2m_coco_subset50
+model: yolo26s
+weights: yolo26s.pt
+dataset: coco
+split: val
+subset: 50
+gt_json: coco/annotations/val2017_subset50.json
+images: coco/val2017
+imgsz: 640
+conf: 0.001
+iou: 0.7             # NMS IoU (Ultralytics default)
+max_det: 300
+device: auto         # cuda > mps > cpu; override with --device
+half: false
+yolo26_head: one2many # one-to-many head + NMS (nms=True)
+rect: true           # letterbox to image aspect ratio, as Ultralytics val() does
+eval_classes: null   # all 80 COCO classes

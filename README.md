@@ -74,6 +74,12 @@ Each run folder holds `detections.json` (COCO format), `run_meta.json`, `metrics
   resize (shorter side 800, longer side at most 1333).
 - Class ids: Ultralytics outputs 0–79, which are mapped to COCO ids 1–90 with `coco80_to_coco91_class()`.
   torchvision already outputs COCO ids.
-- KITTI → COCO: car→car, pedestrian→person and truck→truck are scored. Van→car and
-  person_sitting→person become `iscrowd=1` ignore regions. Cyclist, tram and misc are dropped.
+- KITTI → COCO: car→car, pedestrian→person and truck→truck are scored. Van→car,
+  person_sitting→person and cyclist→person become `iscrowd=1` ignore regions (a detected rider
+  is not a false positive). Tram and misc are dropped.
+- Extra YOLO26s configs: `yolo26s_o2m_*` (one-to-many head + NMS, `nms=True`) and
+  `yolo26s_1280_kitti` (NMS-free at imgsz 1280, to separate resolution from architecture).
+- `run_meta.json` records each model's effective input: the tensor size the network sees and how
+  much objects are scaled on each axis (e.g. KITTI: YOLO26s 224×640 at 0.52×, RT-DETR 640×640
+  stretched 0.52× wide / 1.71× tall, Faster R-CNN 416×1344 at 1.07×).
   KITTI is scored on `car, person, truck` only.
