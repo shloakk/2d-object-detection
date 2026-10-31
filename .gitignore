@@ -2,10 +2,10 @@
 __pycache__/
 *.pyc
 .DS_Store
-data/
-results/
-weights/
+/data/
+/results/
+/weights/
 *.pt
 *.pth
 .ipynb_checkpoints/
-colab-results/
+/colab-results/
