@@ -1,0 +1,37 @@
+{
+  "run_id": "rtdetr_l_kitti_full_20261031-005126",
+  "config": "configs/full/rtdetr_l_kitti.yaml",
+  "model": "rtdetr-l",
+  "checkpoint": "rtdetr-l.pt",
+  "dataset": "kitti",
+  "split": "val",
+  "subset": "full",
+  "n_images": 1496,
+  "gt_json": "/content/data/kitti/annotations/val_full.json",
+  "images": "/content/data/kitti/images/val",
+  "imgsz": 640,
+  "conf": 0.001,
+  "iou": 0.7,
+  "max_det": 300,
+  "half": false,
+  "device": "cuda",
+  "yolo26_head": null,
+  "rect": null,
+  "input_resolution": {
+    "resize": "stretch to square",
+    "network_input_hw": "640x640",
+    "network_input_hw_counts": {
+      "640x640": 1496
+    },
+    "object_scale_x_mean": 0.5163,
+    "object_scale_y_mean": 1.7094
+  },
+  "eval_classes": [
+    "car",
+    "person",
+    "truck"
+  ],
+  "n_detections": 448800,
+  "predict_seconds_total": 17.71,
+  "note": "predict timing is wall-clock incl. image IO; use bench_latency.py for latency"
+}
