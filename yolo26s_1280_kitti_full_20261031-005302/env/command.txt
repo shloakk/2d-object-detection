@@ -1,0 +1,1 @@
+/usr/bin/python3 /content/2d-object-detection/src/predict.py --config configs/full/yolo26s_1280_kitti.yaml
