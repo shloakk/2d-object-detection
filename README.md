@@ -45,6 +45,9 @@ python -m src.viz --gt data/kitti/annotations/val_subset50.json --dt results/<ru
 
 # 6. Pipeline check against Ultralytics' own val()
 python -m src.check_ultralytics_val --config configs/debug/yolo26s_coco.yaml --dt results/<run_id>/detections.json
+
+# 7. Report: report/all_runs.csv + per-class, AP-by-size and Pareto figures from colab-results/
+python -m src.report                     # --subset subset50 for debug runs
 ```
 
 ## Colab results (no Google Drive)
