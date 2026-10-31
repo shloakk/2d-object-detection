@@ -1,0 +1,1 @@
+/usr/bin/python3 /content/2d-object-detection/src/bench_latency.py --config configs/full/yolo26s_o2m_kitti.yaml

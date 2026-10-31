@@ -1,0 +1,1 @@
+/usr/bin/python3 /content/2d-object-detection/src/bench_latency.py --config configs/full/frcnn_v2_kitti.yaml --half

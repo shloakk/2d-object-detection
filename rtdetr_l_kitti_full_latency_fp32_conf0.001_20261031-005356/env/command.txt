@@ -1,0 +1,1 @@
+/usr/bin/python3 /content/2d-object-detection/src/bench_latency.py --config configs/full/rtdetr_l_kitti.yaml
