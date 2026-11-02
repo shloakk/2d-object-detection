@@ -7,6 +7,9 @@ per_class.csv and env/ (pip freeze, nvidia-smi, versions, git hash, command).
 
 Category ids are the classic silent bug:
   * Ultralytics outputs contiguous indices 0-79 -> mapped to COCO ids 1-90 with coco80_to_coco91_class().
+  * A KITTI fine-tuned model (class_map: kitti) outputs the 8 KITTI classes -> only the scored ones are
+    kept (car -> 3, pedestrian -> 1, truck -> 8). Van, person_sitting and cyclist are ignore regions in
+    the GT, so their predictions are dropped; tram and misc are not scored at all.
   * torchvision Faster R-CNN already outputs COCO ids (91-slot space) -> used as-is.
 Boxes from both libraries are xyxy in original-image pixels -> converted to COCO xywh.
 """
@@ -111,8 +114,22 @@ def summarize_inputs(records, resize):
 
 
 # ---------------------------------------------------------------- inference
+def class_id_map(names, cfg):
+    """Model class index -> COCO category id. Indices missing from the map are dropped.
+
+    `names` comes from the first Results object: touching model.names earlier would set up the
+    predictor before predict() passes device and precision.
+    """
+    if cfg.get("class_map") == "kitti":
+        from src.data.kitti_to_coco import KITTI_TO_COCO
+
+        return {i: KITTI_TO_COCO[n.lower()][0] for i, n in names.items()
+                if n.lower() in KITTI_TO_COCO and KITTI_TO_COCO[n.lower()][1] == 0}
+    return dict(enumerate(coco80_to_coco91()))
+
+
 def predict_ultralytics(model, cfg, device, images, img_dir):
-    id_map = coco80_to_coco91()
+    id_map = None
     kw = ultralytics_kwargs(cfg, device)
     stretch = cfg["model"].startswith("rtdetr")  # RT-DETR stretches to a square; YOLO letterboxes
     dets, shapes, inputs = [], [], []
@@ -121,6 +138,8 @@ def predict_ultralytics(model, cfg, device, images, img_dir):
         # which forces square padding and would run out of memory on full COCO.)
         with capture_ultralytics_inputs(shapes):
             r = model.predict(str(img_dir / im["file_name"]), **kw)[0]
+        if id_map is None:
+            id_map = class_id_map(r.names, cfg)
         h, w = shapes[-1]
         h0, w0 = im["height"], im["width"]
         sy, sx = (h / h0, w / w0) if stretch else (min(h / h0, w / w0),) * 2
@@ -130,8 +149,9 @@ def predict_ultralytics(model, cfg, device, images, img_dir):
         cls = r.boxes.cls.int().cpu().tolist()  # contiguous 0-79
         conf = r.boxes.conf.cpu().tolist()
         for b, c, s in zip(xyxy, cls, conf):
-            dets.append({"image_id": image_id, "category_id": id_map[c], "bbox": xyxy_to_xywh(b),
-                         "score": round(float(s), 5)})
+            if c in id_map:
+                dets.append({"image_id": image_id, "category_id": id_map[c], "bbox": xyxy_to_xywh(b),
+                             "score": round(float(s), 5)})
     resize = "stretch to square" if stretch else f"letterbox, aspect kept (rect={cfg.get('rect')})"
     return dets, summarize_inputs(inputs, resize)
 
@@ -216,6 +236,8 @@ def main():
         "device": device,
         "yolo26_head": yolo26_head_used(model, cfg) if family == "ultralytics" else None,
         "rect": cfg.get("rect"),
+        "class_map": cfg.get("class_map", "coco80"),
+        "precision": cfg.get("precision") or ("fp16" if cfg["half"] else "fp32"),
         "input_resolution": input_res,
         "eval_classes": cfg["eval_classes"],
         "n_detections": len(dets),

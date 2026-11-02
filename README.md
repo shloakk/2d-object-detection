@@ -51,6 +51,25 @@ python -m src.report                     # --subset subset50 for debug runs
 python -m src.failure_grid               # report/fig4_failure_grid.png (hand-picked KITTI val frames)
 ```
 
+## Stage 3a: KITTI fine-tune + TensorRT FP16 (Colab, CUDA)
+
+```bash
+python -m src.finetune                                              # YOLO26s on KITTI train, 50 epochs, imgsz 640, seed 0
+python -m src.predict --config configs/full/yolo26s_ft_kitti.yaml     # rect 640, pairs with yolo26s_kitti
+python -m src.predict --config configs/full/yolo26s_ft_sq_kitti.yaml  # square 640, PyTorch reference for the engine
+python -m src.export_trt                                            # -> weights/yolo26s_kitti_ft.engine (FP16, static 640)
+python -m src.predict --config configs/full/yolo26s_ft_trt_kitti.yaml
+python -m src.bench_latency --config configs/full/yolo26s_ft_trt_kitti.yaml
+python -m src.bench_latency --config configs/full/yolo26s_ft_sq_kitti.yaml [--half]
+```
+
+- The fine-tune keeps `last.pt`, not `best.pt`: Ultralytics picks `best.pt` on KITTI val, which is our test set.
+- The fine-tuned model predicts the 8 KITTI classes (`class_map: kitti`). Only car, pedestrian and truck are
+  kept, mapped to COCO ids 3, 1 and 8. Van, person_sitting and cyclist are ignore regions in the GT, so their
+  predictions are dropped.
+- `python -m src.report` adds `fig5_finetune.png` (zero-shot vs fine-tuned) and `stage3a_deploy.csv`
+  (PyTorch FP32/FP16 vs TensorRT FP16, all on the same square 640 input).
+
 ## Colab results (no Google Drive)
 
 On Colab, `CMPE249_RESULTS` points at a clone of the `results` branch, and

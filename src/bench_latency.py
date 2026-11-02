@@ -91,6 +91,8 @@ def model_cost(model, family, imgsz):
         from ultralytics.utils.torch_utils import get_flops
 
         net = model.model
+        if not hasattr(net, "parameters"):  # exported engine: no torch module to count
+            return None, None
         return sum(p.numel() for p in net.parameters()), get_flops(net, imgsz)
     return sum(p.numel() for p in model.parameters()), None
 
@@ -110,7 +112,7 @@ def main():
     device = select_device(cfg["device"])
     if cfg["half"] and device == "cpu":
         raise SystemExit("FP16 is not supported for this benchmark on CPU; use --device cuda or mps")
-    precision = "fp16" if cfg["half"] else "fp32"
+    precision = cfg.get("precision") or ("fp16" if cfg["half"] else "fp32")  # engines bake it in
     valid = device.startswith("cuda")
 
     run_id = f"{cfg['run_name']}_latency_{precision}_conf{cfg['conf']}_{datetime.now():%Y%m%d-%H%M%S}"
@@ -155,10 +157,12 @@ def main():
         "e2e_ms_p95": float(np.percentile(df.e2e_ms, 95)),
         "e2e_ms_mean": df.e2e_ms.mean(),
         "peak_mem_mb": peak_mb if valid else "not available (CUDA only)",
-        "params_M": params / 1e6,
+        "params_M": params / 1e6 if params else None,
         "gflops_640": gflops,
         "valid_for_report": valid,
-        "note": None if valid else "DEBUG ONLY, NOT FOR REPORT (measured off-CUDA)",
+        "note": ("DEBUG ONLY, NOT FOR REPORT (measured off-CUDA)" if not valid else
+                 "peak_mem_mb misses TensorRT's own allocations" if str(cfg.get("weights")).endswith(".engine")
+                 else None),
     }
     save_json(summary, run_dir / "latency.json")
     summary_csv = RESULTS_DIR / "latency_summary.csv"

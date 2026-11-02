@@ -5,7 +5,9 @@ Reads summary.csv and latency_summary.csv from the results-branch checkout
   all_runs.csv              one row per accuracy run, with KITTI latency joined on
   fig1_per_class_ap.png     car / person / truck AP, COCO vs KITTI, per model
   fig2_ap_by_size.png       AP small / medium / large on both datasets
-  fig3_pareto.png           KITTI mAP vs end-to-end latency, point size = peak memory
+  fig3_pareto.png           KITTI mAP vs end-to-end latency, point size = peak memory (zero-shot models)
+  fig5_finetune.png         Stage 3a: zero-shot vs KITTI fine-tuned YOLO26s, per class and per size
+  stage3a_deploy.csv        Stage 3a: fine-tuned YOLO26s, PyTorch FP32/FP16 vs TensorRT FP16 (square 640)
 
 When a config was run more than once, the latest run (by timestamp suffix) wins.
 """
@@ -136,7 +138,7 @@ def fig_by_size(df, out):
 
 
 def fig_pareto(df, out):
-    k = df[(df.dataset == "kitti") & df["e2e_ms_p50_fp16"].notna()]
+    k = df[(df.dataset == "kitti") & df["e2e_ms_p50_fp16"].notna() & df.model_key.isin(MODELS)]
     fig, ax = plt.subplots(figsize=(7.5, 5))
     for _, r in k.iterrows():
         key, color = r.model_key, FAMILY_COLOR[family(r.model_key)]
@@ -164,6 +166,63 @@ def fig_pareto(df, out):
     plt.close(fig)
 
 
+# Stage 3a: the fine-tuned model next to its zero-shot starting point (same imgsz 640, rect, NMS-free head)
+FT_PAIR = {"yolo26s": "YOLO26s zero-shot (COCO)", "yolo26s_ft": "YOLO26s fine-tuned on KITTI"}
+FT_COLOR = {"yolo26s": "#a9c8ef", "yolo26s_ft": "#1f5aa6"}
+# Deployment rows: all use the square 640x640 input the static TensorRT engine needs
+DEPLOY = [("yolo26s_ft_sq", "fp32", "PyTorch FP32"), ("yolo26s_ft_sq", "fp16", "PyTorch FP16"),
+          ("yolo26s_ft_trt16", "fp16", "TensorRT FP16")]
+
+
+def fig_finetune(df, out):
+    k = df[df.dataset == "kitti"].set_index("model_key")
+    if not set(FT_PAIR) <= set(k.index):
+        print("fig5 skipped: no fine-tuned KITTI run yet")
+        return
+    metrics = ["mAP50_95", "AP50", *[f"AP_{c}" for c in CLASSES], "AP_small", "AP_medium", "AP_large"]
+    labels = ["mAP", "AP50", *CLASSES, "small", "medium", "large"]
+    fig, ax = plt.subplots(figsize=(10, 3.8))
+    width = 0.38
+    top = 0
+    for j, key in enumerate(FT_PAIR):
+        vals = [100 * k.loc[key, m] for m in metrics]
+        top = max(top, *vals)
+        xs = [i + (j - 0.5) * (width + 0.02) for i in range(len(metrics))]
+        label_bars(ax, ax.bar(xs, vals, width, color=FT_COLOR[key], label=FT_PAIR[key], edgecolor="white", linewidth=1))
+    ax.set_xticks(range(len(metrics)), labels, fontsize=9)
+    ax.axvline(1.5, color=GRID, linewidth=1)
+    ax.axvline(4.5, color=GRID, linewidth=1)
+    style(ax)
+    ax.set_ylabel("AP@[.5:.95] (%)  (AP50 at IoU .5)", color=INK)
+    ax.set_ylim(0, top * 1.25)
+    ax.legend(frameon=False, fontsize=8, loc="upper right", ncol=2)
+    ax.set_title("KITTI val: zero-shot vs fine-tuned YOLO26s (imgsz 640, NMS-free head)", color=INK)
+    fig.tight_layout()
+    fig.savefig(out / "fig5_finetune.png", dpi=200)
+    plt.close(fig)
+
+
+def deploy_table(df, out):
+    k = df[df.dataset == "kitti"].set_index("model_key")
+    rows = []
+    for key, prec, label in DEPLOY:
+        if key not in k.index or pd.isna(k.loc[key].get(f"e2e_ms_p50_{prec}")):
+            continue
+        r = k.loc[key]
+        rows.append({"variant": label, "mAP50_95": r.mAP50_95, "AP50": r.AP50, "AP_small": r.AP_small,
+                     "e2e_ms_p50": r[f"e2e_ms_p50_{prec}"], "e2e_ms_p95": r[f"e2e_ms_p95_{prec}"],
+                     "infer_ms_mean": r[f"infer_ms_mean_{prec}"], "gpu": r.gpu})
+    if not rows:
+        print("stage3a_deploy.csv skipped: no fine-tuned latency runs yet")
+        return
+    t = pd.DataFrame(rows)
+    # mAP of PyTorch FP16 is not measured separately (predict runs are FP32), so the deltas use FP32
+    t["mAP_delta_vs_fp32"] = t.mAP50_95 - t.mAP50_95.iloc[0]
+    t["speedup_vs_fp32"] = t.e2e_ms_p50.iloc[0] / t.e2e_ms_p50
+    t.to_csv(out / "stage3a_deploy.csv", index=False)
+    print(t.round(4).to_string(index=False))
+
+
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("--results", default=str(REPO_ROOT / "colab-results"), help="results-branch checkout")
@@ -178,6 +237,8 @@ def main():
     fig_per_class(df, out)
     fig_by_size(df, out)
     fig_pareto(df, out)
+    fig_finetune(df, out)
+    deploy_table(df, out)
 
     cols = ["config", "mAP50_95", "AP50", "AP_small", "e2e_ms_p50_fp32", "e2e_ms_p50_fp16", "peak_mem_mb_fp16"]
     print(df[cols].round(4).to_string(index=False))
