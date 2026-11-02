@@ -48,6 +48,7 @@ python -m src.check_ultralytics_val --config configs/debug/yolo26s_coco.yaml --d
 
 # 7. Report: report/all_runs.csv + per-class, AP-by-size and Pareto figures from colab-results/
 python -m src.report                     # --subset subset50 for debug runs
+python -m src.failure_grid               # report/fig4_failure_grid.png (hand-picked KITTI val frames)
 ```
 
 ## Colab results (no Google Drive)

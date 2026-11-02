@@ -9,3 +9,4 @@ __pycache__/
 *.pth
 .ipynb_checkpoints/
 /colab-results/
+/report/failures/
