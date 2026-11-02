@@ -1,0 +1,11 @@
+{
+  "run_id": "yolo26s_ft_trt_fp16_export_20261102-101450",
+  "source_weights": "/content/weights/yolo26s_kitti_scene_ft.pt",
+  "engine": "/content/weights/yolo26s_kitti_scene_ft.engine",
+  "precision": "fp16",
+  "input": "1x3x640x640 (static)",
+  "head": "one2one (NMS-free), nms=False",
+  "tensorrt": "11.4.0.106",
+  "pt_size_mb": 19.35,
+  "engine_size_mb": 20.38
+}
