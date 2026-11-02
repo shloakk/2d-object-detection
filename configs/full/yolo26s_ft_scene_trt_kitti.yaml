@@ -1,13 +1,13 @@
-# yolo26s fine-tuned, TensorRT FP16 engine (src/export_trt.py), on kitti val (full images). Paths are relative to CMPE249_DATA (default: ./data).
-run_name: yolo26s_ft_trt16_kitti_full
+# yolo26s scene fine-tune, TensorRT FP16 engine (src.export_trt), on scene-disjoint KITTI val. Paths are relative to CMPE249_DATA (default: ./data).
+run_name: yolo26s_ft_scene_trt16_kitti_full
 model: yolo26s
-weights: yolo26s_kitti_ft.engine
+weights: yolo26s_kitti_scene_ft.engine
 class_map: kitti     # model outputs the 8 KITTI classes; only car/pedestrian/truck are kept (see predict.py)
 dataset: kitti
-split: val
+split: scene_val
 subset: full
-gt_json: kitti/annotations/val_full.json
-images: kitti/images/val
+gt_json: kitti/annotations/scene_val_full.json
+images: kitti/images        # file_name is train/... or val/...
 imgsz: 640
 conf: 0.001
 iou: 0.7             # only used by the one2many head

@@ -1,15 +1,15 @@
 """Stage 3a: export the KITTI fine-tuned YOLO26s to a TensorRT FP16 engine (CUDA only).
 
-    python -m src.export_trt          # weights/yolo26s_kitti_ft.pt -> weights/yolo26s_kitti_ft.engine
+    python -m src.export_trt          # weights/yolo26s_kitti_scene_ft.pt -> weights/yolo26s_kitti_scene_ft.engine
 
 Static 1x3x640x640 input, NMS-free one-to-one head (nms=False), as the PyTorch runs use. A static
 engine always letterboxes to the 640x640 square, so its PyTorch reference is the square config
-(configs/full/yolo26s_ft_sq_kitti.yaml), not the rect one. The engine is tied to this GPU and
+(configs/full/yolo26s_ft_scene_sq_kitti.yaml), not the rect one. The engine is tied to this GPU and
 TensorRT version, so only its metadata goes to results/; rebuild it after a runtime reset.
 
 Then score and time it like any other run:
-    python -m src.predict --config configs/full/yolo26s_ft_trt_kitti.yaml
-    python -m src.bench_latency --config configs/full/yolo26s_ft_trt_kitti.yaml
+    python -m src.predict --config configs/full/yolo26s_ft_scene_trt_kitti.yaml
+    python -m src.bench_latency --config configs/full/yolo26s_ft_scene_trt_kitti.yaml
 """
 
 import argparse
@@ -23,7 +23,7 @@ from src.finetune import FT_WEIGHTS
 
 def main():
     ap = argparse.ArgumentParser()
-    ap.add_argument("--weights", default=FT_WEIGHTS)
+    ap.add_argument("--weights", default=FT_WEIGHTS["scene"])
     ap.add_argument("--imgsz", type=int, default=640)
     ap.add_argument("--workspace", type=float, default=8, help="TensorRT builder workspace (GiB)")
     args = ap.parse_args()

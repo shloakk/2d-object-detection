@@ -1,4 +1,4 @@
-# yolo26s fine-tuned on KITTI train (src/finetune.py), on kitti val (full images). Paths are relative to CMPE249_DATA (default: ./data).
+# yolo26s fine-tuned on Ultralytics KITTI train (random frame split: val scenes leak into train, scores inflated). Kept only as the leakage reference.
 run_name: yolo26s_ft_kitti_full
 model: yolo26s
 weights: yolo26s_kitti_ft.pt

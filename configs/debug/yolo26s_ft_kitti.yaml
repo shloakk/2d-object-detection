@@ -1,7 +1,7 @@
-# yolo26s fine-tuned on KITTI train, on kitti val (50 images). Paths are relative to CMPE249_DATA (default: ./data).
+# yolo26s fine-tuned on scene-disjoint KITTI train, on kitti val (50 images). Paths are relative to CMPE249_DATA (default: ./data).
 run_name: yolo26s_ft_kitti_subset50
 model: yolo26s
-weights: yolo26s_kitti_ft.pt
+weights: yolo26s_kitti_scene_ft.pt
 class_map: kitti     # model outputs the 8 KITTI classes; only car/pedestrian/truck are kept (see predict.py)
 dataset: kitti
 split: val

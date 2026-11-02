@@ -6,7 +6,7 @@ Reads summary.csv and latency_summary.csv from the results-branch checkout
   fig1_per_class_ap.png     car / person / truck AP, COCO vs KITTI, per model
   fig2_ap_by_size.png       AP small / medium / large on both datasets
   fig3_pareto.png           KITTI mAP vs end-to-end latency, point size = peak memory (zero-shot models)
-  fig5_finetune.png         Stage 3a: zero-shot vs KITTI fine-tuned YOLO26s, per class and per size
+  fig5_finetune.png         Stage 3a: zero-shot vs KITTI fine-tuned YOLO26s on the scene-disjoint val
   stage3a_deploy.csv        Stage 3a: fine-tuned YOLO26s, PyTorch FP32/FP16 vs TensorRT FP16 (square 640)
 
 When a config was run more than once, the latest run (by timestamp suffix) wins.
@@ -166,12 +166,13 @@ def fig_pareto(df, out):
     plt.close(fig)
 
 
-# Stage 3a: the fine-tuned model next to its zero-shot starting point (same imgsz 640, rect, NMS-free head)
-FT_PAIR = {"yolo26s": "YOLO26s zero-shot (COCO)", "yolo26s_ft": "YOLO26s fine-tuned on KITTI"}
-FT_COLOR = {"yolo26s": "#a9c8ef", "yolo26s_ft": "#1f5aa6"}
+# Stage 3a: the fine-tuned model next to its zero-shot starting point, both on the scene-disjoint
+# KITTI val (whole drives held out of training), same imgsz 640, rect, NMS-free head
+FT_PAIR = {"yolo26s_scene": "YOLO26s zero-shot (COCO)", "yolo26s_ft_scene": "YOLO26s fine-tuned on KITTI"}
+FT_COLOR = {"yolo26s_scene": "#a9c8ef", "yolo26s_ft_scene": "#1f5aa6"}
 # Deployment rows: all use the square 640x640 input the static TensorRT engine needs
-DEPLOY = [("yolo26s_ft_sq", "fp32", "PyTorch FP32"), ("yolo26s_ft_sq", "fp16", "PyTorch FP16"),
-          ("yolo26s_ft_trt16", "fp16", "TensorRT FP16")]
+DEPLOY = [("yolo26s_ft_scene_sq", "fp32", "PyTorch FP32"), ("yolo26s_ft_scene_sq", "fp16", "PyTorch FP16"),
+          ("yolo26s_ft_scene_trt16", "fp16", "TensorRT FP16")]
 
 
 def fig_finetune(df, out):
@@ -196,7 +197,8 @@ def fig_finetune(df, out):
     ax.set_ylabel("AP@[.5:.95] (%)  (AP50 at IoU .5)", color=INK)
     ax.set_ylim(0, top * 1.25)
     ax.legend(frameon=False, fontsize=8, loc="upper right", ncol=2)
-    ax.set_title("KITTI val: zero-shot vs fine-tuned YOLO26s (imgsz 640, NMS-free head)", color=INK)
+    ax.set_title("Scene-disjoint KITTI val (20 held-out drives): zero-shot vs fine-tuned YOLO26s, imgsz 640",
+                 color=INK)
     fig.tight_layout()
     fig.savefig(out / "fig5_finetune.png", dpi=200)
     plt.close(fig)

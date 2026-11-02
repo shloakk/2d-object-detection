@@ -79,6 +79,48 @@ def ensure_kitti(root):
     return {int(k): v.lower() for k, v in cfg["names"].items()}
 
 
+def to_coco(img_paths, names, img_root):
+    """COCO GT for the given KITTI images. file_name is relative to img_root, so one JSON can mix
+    images/train and images/val (the scene-disjoint split does). Labels sit at labels/<split>/<stem>.txt."""
+    images, anns = [], []
+    before, after = Counter(), Counter()
+    for image_id, img_path in enumerate(img_paths, start=1):
+        w, h = Image.open(img_path).size  # sizes differ across KITTI sequences
+        images.append({"id": image_id, "file_name": str(img_path.relative_to(img_root)), "width": w, "height": h})
+
+        lbl_path = img_path.parents[2] / "labels" / img_path.parent.name / (img_path.stem + ".txt")
+        lines = lbl_path.read_text().split("\n") if lbl_path.exists() else []
+        for line in lines:
+            if not line.strip():
+                continue
+            cls, cx, cy, bw, bh = line.split()[:5]
+            name = names[int(cls)]
+            before[name] += 1
+            if name not in KITTI_TO_COCO:
+                continue
+            cat_id, crowd = KITTI_TO_COCO[name]
+            # normalized center xywh -> pixel top-left xywh
+            bw, bh = float(bw) * w, float(bh) * h
+            x, y = float(cx) * w - bw / 2, float(cy) * h - bh / 2
+            anns.append({
+                "id": len(anns) + 1, "image_id": image_id, "category_id": cat_id,
+                "bbox": [round(x, 2), round(y, 2), round(bw, 2), round(bh, 2)],
+                "area": round(bw * bh, 2), "iscrowd": crowd, "kitti_class": name,
+            })
+            after[f"{name} -> {'ignore ' if crowd else ''}{CATEGORIES[[c['id'] for c in CATEGORIES].index(cat_id)]['name']}"] += 1
+    return images, anns, before, after
+
+
+def print_mapping(names, before, after):
+    print("Instances before mapping (KITTI classes):")
+    for name in names.values():
+        print(f"  {name:15s} {before[name]:6d}")
+    print("Instances after mapping (COCO ids):")
+    for k, v in sorted(after.items()):
+        print(f"  {k:28s} {v:6d}")
+    print(f"  dropped (tram/misc)          {sum(before.values()) - sum(after.values()):6d}")
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--split", default="val")
@@ -99,48 +141,15 @@ def main():
         return
 
     img_dir = root / "images" / args.split
-    lbl_dir = root / "labels" / args.split
     img_paths = sorted(img_dir.glob("*.png"))
     if args.subset:
         img_paths = sorted(random.Random(args.seed).sample(img_paths, args.subset))
 
-    images, anns = [], []
-    before, after = Counter(), Counter()
-    for image_id, img_path in enumerate(img_paths, start=1):
-        w, h = Image.open(img_path).size  # sizes differ across KITTI sequences
-        images.append({"id": image_id, "file_name": img_path.name, "width": w, "height": h})
-
-        lbl_path = lbl_dir / (img_path.stem + ".txt")
-        lines = lbl_path.read_text().split("\n") if lbl_path.exists() else []
-        for line in lines:
-            if not line.strip():
-                continue
-            cls, cx, cy, bw, bh = line.split()[:5]
-            name = names[int(cls)]
-            before[name] += 1
-            if name not in KITTI_TO_COCO:
-                continue
-            cat_id, crowd = KITTI_TO_COCO[name]
-            # normalized center xywh -> pixel top-left xywh
-            bw, bh = float(bw) * w, float(bh) * h
-            x, y = float(cx) * w - bw / 2, float(cy) * h - bh / 2
-            anns.append({
-                "id": len(anns) + 1, "image_id": image_id, "category_id": cat_id,
-                "bbox": [round(x, 2), round(y, 2), round(bw, 2), round(bh, 2)],
-                "area": round(bw * bh, 2), "iscrowd": crowd, "kitti_class": name,
-            })
-            after[f"{name} -> {'ignore ' if crowd else ''}{CATEGORIES[[c['id'] for c in CATEGORIES].index(cat_id)]['name']}"] += 1
-
+    images, anns, before, after = to_coco(img_paths, names, img_dir)
     save_json({"images": images, "annotations": anns, "categories": CATEGORIES}, out)
 
     print(f"\n{len(images)} images from {img_dir}")
-    print("Instances before mapping (KITTI classes):")
-    for name in names.values():
-        print(f"  {name:15s} {before[name]:6d}")
-    print("Instances after mapping (COCO ids):")
-    for k, v in sorted(after.items()):
-        print(f"  {k:28s} {v:6d}")
-    print(f"  dropped (tram/misc)          {sum(before.values()) - sum(after.values()):6d}")
+    print_mapping(names, before, after)
     print(f"-> {out}")
 
 

@@ -53,21 +53,31 @@ python -m src.failure_grid               # report/fig4_failure_grid.png (hand-pi
 
 ## Stage 3a: KITTI fine-tune + TensorRT FP16 (Colab, CUDA)
 
+Ultralytics' `kitti.yaml` splits KITTI's frames at random, so consecutive frames of one drive land in
+both train and val: about half of its val frames have a near-identical train frame. A fine-tune scored on
+it reaches 72.0 mAP mostly on memorised scenes. Stage 3a therefore uses a **scene-disjoint split**: 20 of
+the 141 raw drives (1,559 frames) are held out as val, the other 5,922 frames are train. The drive of each
+frame comes from the KITTI object devkit; the chosen frame ids are committed in `splits/kitti_scene/`.
+
 ```bash
-python -m src.finetune                                              # YOLO26s on KITTI train, 50 epochs, imgsz 640, seed 0
-python -m src.predict --config configs/full/yolo26s_ft_kitti.yaml     # rect 640, pairs with yolo26s_kitti
-python -m src.predict --config configs/full/yolo26s_ft_sq_kitti.yaml  # square 640, PyTorch reference for the engine
-python -m src.export_trt                                            # -> weights/yolo26s_kitti_ft.engine (FP16, static 640)
-python -m src.predict --config configs/full/yolo26s_ft_trt_kitti.yaml
-python -m src.bench_latency --config configs/full/yolo26s_ft_trt_kitti.yaml
-python -m src.bench_latency --config configs/full/yolo26s_ft_sq_kitti.yaml [--half]
+python -m src.data.kitti_scene_split                                       # lists, dataset yaml, scene_val GT
+python -m src.finetune --split scene                                       # 50 epochs, imgsz 640, seed 0
+python -m src.predict --config configs/full/yolo26s_scene_kitti.yaml          # zero-shot on scene val
+python -m src.predict --config configs/full/yolo26s_ft_scene_kitti.yaml       # fine-tuned, rect 640
+python -m src.predict --config configs/full/yolo26s_ft_scene_sq_kitti.yaml    # fine-tuned, square 640 (engine reference)
+pip install "nvidia-modelopt[onnx]>=0.44"                                  # TensorRT 11 FP16 export needs it
+python -m src.export_trt                                                   # -> weights/yolo26s_kitti_scene_ft.engine
+python -m src.predict --config configs/full/yolo26s_ft_scene_trt_kitti.yaml
+python -m src.bench_latency --config configs/full/yolo26s_ft_scene_trt_kitti.yaml
+python -m src.bench_latency --config configs/full/yolo26s_ft_scene_sq_kitti.yaml [--half]
 ```
 
-- The fine-tune keeps `last.pt`, not `best.pt`: Ultralytics picks `best.pt` on KITTI val, which is our test set.
+- The fine-tune keeps `last.pt`, not `best.pt`: Ultralytics picks `best.pt` on the val split, which is our test set.
 - The fine-tuned model predicts the 8 KITTI classes (`class_map: kitti`). Only car, pedestrian and truck are
   kept, mapped to COCO ids 3, 1 and 8. Van, person_sitting and cyclist are ignore regions in the GT, so their
   predictions are dropped.
-- `python -m src.report` adds `fig5_finetune.png` (zero-shot vs fine-tuned) and `stage3a_deploy.csv`
+- `configs/full/yolo26s_ft_kitti.yaml` (Ultralytics split, `--split ultralytics`) is kept only as the leakage reference.
+- `python -m src.report` adds `fig5_finetune.png` (zero-shot vs fine-tuned on scene val) and `stage3a_deploy.csv`
   (PyTorch FP32/FP16 vs TensorRT FP16, all on the same square 640 input).
 
 ## Colab results (no Google Drive)
