@@ -1,0 +1,16 @@
+{
+  "run_id": "yolo26s_kitti_scene_finetune_e50_20261102-100254",
+  "start_weights": "yolo26s.pt",
+  "split": "scene",
+  "dataset": "/content/data/kitti/kitti_scene.yaml (8 KITTI classes)",
+  "epochs": 50,
+  "imgsz": 640,
+  "batch": 32,
+  "seed": 0,
+  "fraction": 1.0,
+  "cache": true,
+  "device": "cuda",
+  "kept_weights": "last.pt (fixed schedule; best.pt would select on KITTI val = our test set)",
+  "train_dir": "/content/weights/train/yolo26s_kitti_scene_finetune_e50_20261102-100254",
+  "output_weights": "/content/weights/yolo26s_kitti_scene_ft.pt"
+}
